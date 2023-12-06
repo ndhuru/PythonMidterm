@@ -1,9 +1,8 @@
 import tkinter as tk
-from tkinter import messagebox
 import requests
 
 # API base URL
-API_BASE_URL = 'http://localhost:4444'
+API_BASE_URL = 'http://192.168.1.33:4444'
 
 # Create a list to hold the past four commands
 command_log = []
@@ -14,10 +13,11 @@ def send_command(command):
     payload = {'command': command}
     response = requests.post(endpoint, json=payload)
     if response.status_code == 200:
-        messagebox.showinfo("Robot Moved", command.capitalize())
+        print('Command executed successfully.')
+        print(command + " " + "executed")
         update_command_log(command)
     else:
-        messagebox.showerror("Error", "Failed to execute command.")
+        print('Error executing command.')
 
 # Function to update the command log
 def update_command_log(command):
@@ -28,43 +28,19 @@ def update_command_log(command):
 
 # Create the main window
 window = tk.Tk()
-window.configure(bg='#639c8f')
-window.geometry('500x500')
-window.title('Python Client')
-window.resizable(False, False)
+window.title('Robot Control')
+
+# Set the window size
+window.geometry('900x600')
 
 # Create log label
-log_label = tk.Label(window, text='Log History:', bg='#639c8f', fg='#e21d76', font='bold')
-log_label.grid(row=15, column=0)
+log_label = tk.Label(window, text='Command Log')
+log_label.grid(row=0, column=0, columnspan=2, padx=10, pady=10)
 
 # Create log text widget
 log_text = tk.StringVar()
 log_text_widget = tk.Label(window, textvariable=log_text, justify='left', anchor='w', relief='solid')
-log_text_widget.grid(row=16, column=0, padx=10, pady=10)
-
-# Function to send 'forward' command
-def forward_command():
-    send_command('forward')
-
-# Function to send 'backward' command
-def backward_command():
-    send_command('backward')
-
-# Function to send 'left' command
-def left_command():
-    send_command('left')
-
-# Function to send 'right' command
-def right_command():
-    send_command('right')
-
-# Function to send 'stop' command
-def stop_command():
-    send_command('stop')
-
-# Function to send 'start' command
-def start_command():
-    send_command('start')
+log_text_widget.grid(row=1, column=0, columnspan=2, padx=10, pady=10)
 
 # Create arrow buttons
 forward_button = tk.Button(window, text='\u2191', command=forward_command, width=5, height=2)
@@ -73,25 +49,27 @@ left_button = tk.Button(window, text='\u2190', command=left_command, width=5, he
 right_button = tk.Button(window, text='\u2192', command=right_command, width=5, height=2)
 
 # Create stop button
-stop_button = tk.Button(window, text='\u26D4', command=stop_command, bg='red', fg='white', width=5, height=2)
+stop_button = tk.Button(window, text='\u2B22', command=stop_command, bg='red', fg='white', width=5, height=2)
 
-# Create start button
-start_button = tk.Button(window, text='\u25B6', command=start_command, bg='green', fg='white', width=5, height=2)
+# Create play button
+play_button = tk.Button(window, text='\u25B6', command=play_command, bg='green', fg='white', width=5, height=2)
 
 # Position the buttons in the window
-forward_button.grid(row=3, column=1, padx=10, pady=10)
-backward_button.grid(row=5, column=1, padx=10, pady=10)
-left_button.grid(row=4, column=0, padx=10, pady=10)
-right_button.grid(row=4, column=2, padx=10, pady=10)
-stop_button.grid(row=6, column=1, padx=10, pady=10)
-start_button.grid(row=7, column=1, padx=10, pady=10)
+forward_button.grid(row=2, column=1, padx=10, pady=10)
+backward_button.grid(row=4, column=1, padx=10, pady=10)
+left_button.grid(row=3, column=0, padx=10, pady=10)
+right_button.grid(row=3, column=2, padx=10, pady=10)
+stop_button.grid(row=3, column=1, padx=10, pady=10)
+play_button.grid(row=5, column=1, padx=10, pady=10)
 
-# Function to handle window close event
-def on_closing():
-    if messagebox.askokcancel("Quit", "Do you want to quit?"):
-        window.destroy()
-
-# Set the closing event handler
-window.protocol("WM_DELETE_WINDOW", on_closing)
+# Split the screen evenly into four pieces
+window.grid_columnconfigure(0, weight=1)
+window.grid_columnconfigure(1, weight=1)
+window.grid_rowconfigure(0, weight=1)
+window.grid_rowconfigure(1, weight=1)
+window.grid_rowconfigure(2, weight=1)
+window.grid_rowconfigure(3, weight=1)
+window.grid_rowconfigure(4, weight=1)
+window.grid_rowconfigure(5, weight=1)
 
 window.mainloop()
