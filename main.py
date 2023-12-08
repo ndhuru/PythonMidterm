@@ -1,172 +1,114 @@
 import tkinter as tk
-import sqlite3
-import subprocess
+from tkinter import messagebox
+import requests
+import sys
+import datetime
 
+# API base URL
+API_BASE_URL = 'http://localhost:4444'
 
-conn = sqlite3.connect('allmyusers.db')
-cursor = conn.cursor()
+# Create a list to hold the past four commands
+command_log = []
 
-newtableQuery = '''
-CREATE TABLE IF NOT EXISTS users (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    username TEXT NOT NULL UNIQUE,
-    password TEXT NOT NULL,
-    first_name TEXT,
-    last_name TEXT
-);
-'''
-cursor.execute(newtableQuery)
+# Variable to store the username of the logged-in user
+logged_in_user = ""
 
-
-def newUser(username, password, first_name, last_name):
-    insertQuery = '''
-    INSERT INTO users (username, password, first_name, last_name)
-    VALUES (?, ?, ?, ?);
-    '''
-    cursor.execute(insertQuery, (username, password, first_name, last_name))
-    conn.commit()
-    print("New user created successfully!")
-
-
-def loginUser(username, password):
-    select_query = '''
-    SELECT * FROM users WHERE username = ? AND password = ?;
-    '''
-    cursor.execute(select_query, (username, password))
-    user = cursor.fetchone()
-
-    if user:
-        welcome_window = tk.Toplevel()
-        welcome_window.geometry("900x600")
-
-        welcome_label = tk.Label(welcome_window, text=f"Welcome!")
-        welcome_label.pack()
-
-        # Store the username in the logged_in_user variable of client.py
-        subprocess.Popen(["python", "client.py", username])
-
+# Function to send control command to the API and update the command log
+def send_command(command):
+    endpoint = f'{API_BASE_URL}/control'
+    payload = {'command': command}
+    response = requests.post(endpoint, json=payload)
+    if response.status_code == 200:
+        update_command_log(command)
     else:
-        print("Not a user in the system, sign up first please.")
+        messagebox.showerror("Error", "Failed to execute command.")
 
+# Function to update the command log
+def update_command_log(command):
+    global logged_in_user
+    if len(command_log) == 4:
+        command_log.pop(0)
+    log_entry = f"{logged_in_user}: {command} on {datetime.datetime.now()}"
+    command_log.append(log_entry)
+    log_text.set('\n'.join(command_log))
+    with open('cmdlog.txt', 'a') as file:
+        file.write(log_entry + '\n')
 
-def displayAllUsers(admin_password):
-    if admin_password == "LosPollosHermanos":
-        select_all_query = '''
-        SELECT * FROM users;
-        '''
-        cursor.execute(select_all_query)
-        all_users = cursor.fetchall()
-        viewer_window = tk.Toplevel()
+# Function to receive the logged-in username from main.py
+def receive_username(username):
+    global logged_in_user
+    logged_in_user = username
 
-        if all_users:
-            for user in all_users:
-                id_label = tk.Label(viewer_window, text=f"ID: {user[0]}")
-                username_label = tk.Label(viewer_window, text=f"Username: {user[1]}")
-                password_label = tk.Label(viewer_window, text=f"Password: {user[2]}")
-                first_name_label = tk.Label(viewer_window, text=f"First Name: {user[3]}")
-                last_name_label = tk.Label(viewer_window, text=f"Last Name: {user[4]}")
+# Create the main window
+window = tk.Tk()
+window.configure(bg='#639c8f')
+window.geometry('900x600')
+window.title('Python Client')
+window.resizable(False, False)
 
-                id_label.pack()
-                username_label.pack()
-                password_label.pack()
-                first_name_label.pack()
-                last_name_label.pack()
-        else:
-            no_users_label = tk.Label(viewer_window, text="No users found")
-            no_users_label.pack()
-    else:
-        invalid_password_label = tk.Label(viewer_window, text="Invalid password")
-        invalid_password_label.pack()
+# Create log label
+log_label = tk.Label(window, text='Log History:', bg='#639c8f', fg='#e21d76', font='bold')
+log_label.grid(row=15, column=0)
 
+# Create log text widget
+log_text = tk.StringVar()
+log_text_widget = tk.Label(window, textvariable=log_text, justify='left', anchor='w', relief='solid')
+log_text_widget.grid(row=16, column=0, padx=10, pady=10)
 
-def signupMaker():
-    def signup():
-        username = username_entry.get()
-        password = password_entry.get()
-        first_name = first_name_entry.get()
-        last_name = last_name_entry.get()
-        newUser(username, password, first_name, last_name)
-        signup_window.destroy()
+# Function to send 'forward' command
+def forward_command():
+    send_command('forward')
 
-    signup_window = tk.Toplevel(root)
+# Function to send 'backward' command
+def backward_command():
+    send_command('backward')
 
-    username_label = tk.Label(signup_window, text="Username:")
-    username_label.pack()
-    username_entry = tk.Entry(signup_window)
-    username_entry.pack()
+# Function to send 'left' command
+def left_command():
+    send_command('left')
 
-    password_label = tk.Label(signup_window, text="Password:")
-    password_label.pack()
-    password_entry = tk.Entry(signup_window)
-    password_entry.pack()
+# Function to send 'right' command
+def right_command():
+    send_command('right')
 
-    first_name_label = tk.Label(signup_window, text="First Name:")
-    first_name_label.pack()
-    first_name_entry = tk.Entry(signup_window)
-    first_name_entry.pack()
+# Function to send 'stop' command
+def stop_command():
+    send_command('stop')
 
-    last_name_label = tk.Label(signup_window, text="Last Name:")
-    last_name_label.pack()
-    last_name_entry = tk.Entry(signup_window)
-    last_name_entry.pack()
+# Function to send 'start' command
+def play_command():
+    send_command('play')
 
-    signup_button = tk.Button(signup_window, text="Sign Up", command=signup)
-    signup_button.pack()
+# Create arrow buttons
+forward_button = tk.Button(window, text='\u2191', command=forward_command, width=5, height=2)
+backward_button = tk.Button(window, text='\u2193', command=backward_command, width=5, height=2)
+left_button = tk.Button(window, text='\u2190', command=left_command, width=5, height=2)
+right_button = tk.Button(window, text='\u2192', command=right_command, width=5, height=2)
 
+# Create stop button
+stop_button = tk.Button(window, text='\u26D4', command=stop_command, bg='red', fg='white', width=5, height=2)
 
-def loginMode():
-    def login():
-        username = username_entry.get()
-        password = password_entry.get()
-        loginUser(username, password)
-        login_window.destroy()
+# Create start button
+start_button = tk.Button(window, text='\u25B6', command=play_command, bg='green', fg='white', width=5, height=2)
 
-    login_window = tk.Toplevel(root)
+# Position the buttons in the window
+forward_button.grid(row=4, column=1, padx=10, pady=10)
+backward_button.grid(row=6, column=1, padx=10, pady=10)
+left_button.grid(row=5, column=0, padx=10, pady=10)
+right_button.grid(row=5, column=2, padx=10, pady=10)
+stop_button.grid(row=5, column=1, padx=10, pady=10)
+start_button.grid(row=7, column=1, padx=10, pady=10)
 
-    username_label = tk.Label(login_window, text="Username:")
-    username_label.pack()
-    username_entry = tk.Entry(login_window)
-    username_entry.pack()
+# Function to handle window close event
+def on_closing():
+    if messagebox.askokcancel("Quit", "Do you want to quit?"):
+        window.destroy()
 
-    password_label = tk.Label(login_window, text="Password:")
-    password_label.pack()
-    password_entry = tk.Entry(login_window)
-    password_entry.pack()
+# Set the closing event handler
+window.protocol("WM_DELETE_WINDOW", on_closing)
 
-    login_button = tk.Button(login_window, text="Login", command=login)
-    login_button.pack()
+# Call the receive_username function with the username passed as an argument
+if len(sys.argv) > 1:
+    receive_username(sys.argv[1])
 
-
-def adminMode():
-    def viewUsers():
-        admin_password = admin_password_entry.get()
-        displayAllUsers(admin_password)
-        viewUsers_window.destroy()
-
-    viewUsers_window = tk.Toplevel(root)
-
-    admin_password_label = tk.Label(viewUsers_window, text="Admin Password:")
-    admin_password_label.pack()
-    admin_password_entry = tk.Entry(viewUsers_window, show="*")
-    admin_password_entry.pack()
-
-    viewUsers_button = tk.Button(viewUsers_window, text="View Users", command=viewUsers)
-    viewUsers_button.pack()
-
-
-root = tk.Tk()
-root.geometry("900x600")
-root.title("Login thing")
-
-signup_button = tk.Button(root, text="Sign Up", command=signupMaker)
-signup_button.pack()
-
-login_button = tk.Button(root, text="Log In", command=loginMode)
-login_button.pack()
-
-admin_view_button = tk.Button(root, text="Admin View (display users here)", command=adminMode)
-admin_view_button.pack()
-
-root.mainloop()
-
-conn.close()
+window.mainloop()
