@@ -3,6 +3,7 @@ from tkinter import ttk, messagebox
 import requests
 import sys
 import datetime
+from main import *
 
 # api base url
 api_base_url = 'http://localhost:4444'
