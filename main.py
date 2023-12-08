@@ -1,5 +1,7 @@
 import tkinter as tk
 import sqlite3
+import subprocess
+
 
 conn = sqlite3.connect('allmyusers.db')
 cursor = conn.cursor()
@@ -39,8 +41,10 @@ def loginUser(username, password):
 
         welcome_label = tk.Label(welcome_window, text=f"Welcome!")
         welcome_label.pack()
-        import subprocess
-        subprocess.Popen(["python", "client.py"])
+
+        # Store the username in the logged_in_user variable of client.py
+        subprocess.Popen(["python", "client.py", username])
+
     else:
         print("Not a user in the system, sign up first please.")
 
