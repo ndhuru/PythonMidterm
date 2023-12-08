@@ -1,4 +1,3 @@
-# import necessary libraries
 import tkinter as tk
 import sqlite3
 import subprocess
