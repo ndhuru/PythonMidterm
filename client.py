@@ -2,6 +2,7 @@ import tkinter as tk
 from tkinter import messagebox
 import requests
 import sys
+import datetime
 
 # API base URL
 API_BASE_URL = 'http://localhost:4444'
@@ -27,9 +28,11 @@ def update_command_log(command):
     global logged_in_user
     if len(command_log) == 4:
         command_log.pop(0)
-    log_entry = f"{logged_in_user}: {command}"
+    log_entry = f"{logged_in_user}: {command} on {datetime.datetime.now()}"
     command_log.append(log_entry)
     log_text.set('\n'.join(command_log))
+    with open('cmdlog.txt', 'a') as file:
+        file.write(log_entry + '\n')
 
 # Function to receive the logged-in username from main.py
 def receive_username(username):
