@@ -1,11 +1,13 @@
+# import necessary libraries
 import tkinter as tk
 import sqlite3
 import subprocess
 
-
+# connect to SQLite database
 conn = sqlite3.connect('allmyusers.db')
 cursor = conn.cursor()
 
+# create a table for users if it doesn't exist
 newtableQuery = '''
 CREATE TABLE IF NOT EXISTS users (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -17,7 +19,7 @@ CREATE TABLE IF NOT EXISTS users (
 '''
 cursor.execute(newtableQuery)
 
-
+# function to add a new user to the database
 def newUser(username, password, first_name, last_name):
     insertQuery = '''
     INSERT INTO users (username, password, first_name, last_name)
@@ -27,7 +29,7 @@ def newUser(username, password, first_name, last_name):
     conn.commit()
     print("New user created successfully!")
 
-
+# function to log in a user
 def loginUser(username, password):
     select_query = '''
     SELECT * FROM users WHERE username = ? AND password = ?;
@@ -36,19 +38,18 @@ def loginUser(username, password):
     user = cursor.fetchone()
 
     if user:
+        # open a new window to welcome the user
         welcome_window = tk.Toplevel()
         welcome_window.geometry("900x600")
-
         welcome_label = tk.Label(welcome_window, text=f"Welcome!")
         welcome_label.pack()
 
-        # Store the username in the logged_in_user variable of client.py
+        # launch a subprocess to execute another Python script (client.py)
         subprocess.Popen(["python", "client.py", username])
-
     else:
         print("Not a user in the system, sign up first please.")
 
-
+# function to display all users (admin mode)
 def displayAllUsers(admin_password):
     if admin_password == "LosPollosHermanos":
         select_all_query = '''
@@ -59,6 +60,7 @@ def displayAllUsers(admin_password):
         viewer_window = tk.Toplevel()
 
         if all_users:
+            # display user information in the new window
             for user in all_users:
                 id_label = tk.Label(viewer_window, text=f"ID: {user[0]}")
                 username_label = tk.Label(viewer_window, text=f"Username: {user[1]}")
@@ -72,13 +74,15 @@ def displayAllUsers(admin_password):
                 first_name_label.pack()
                 last_name_label.pack()
         else:
+            # display a message if no users are found
             no_users_label = tk.Label(viewer_window, text="No users found")
             no_users_label.pack()
     else:
+        # display a message for an invalid password
         invalid_password_label = tk.Label(viewer_window, text="Invalid password")
         invalid_password_label.pack()
 
-
+# function to create a window for user signup
 def signupMaker():
     def signup():
         username = username_entry.get()
@@ -113,7 +117,7 @@ def signupMaker():
     signup_button = tk.Button(signup_window, text="Sign Up", command=signup)
     signup_button.pack()
 
-
+# function to create a window for user login
 def loginMode():
     def login():
         username = username_entry.get()
@@ -136,7 +140,7 @@ def loginMode():
     login_button = tk.Button(login_window, text="Login", command=login)
     login_button.pack()
 
-
+# function to create a window for admin mode
 def adminMode():
     def viewUsers():
         admin_password = admin_password_entry.get()
@@ -153,11 +157,12 @@ def adminMode():
     viewUsers_button = tk.Button(viewUsers_window, text="View Users", command=viewUsers)
     viewUsers_button.pack()
 
-
+# create the main application window
 root = tk.Tk()
 root.geometry("900x600")
 root.title("Login thing")
 
+# buttons for user interaction
 signup_button = tk.Button(root, text="Sign Up", command=signupMaker)
 signup_button.pack()
 
@@ -167,6 +172,8 @@ login_button.pack()
 admin_view_button = tk.Button(root, text="Admin View (display users here)", command=adminMode)
 admin_view_button.pack()
 
+# start the main event loop
 root.mainloop()
 
+# close the database connection when the application is closed
 conn.close()
