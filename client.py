@@ -6,7 +6,7 @@ import datetime
 from main import *
 
 # api base url
-api_base_url = 'http://localhost:4444'
+api_base_url = 'http://192.168.1.33:4444'
 
 # create a list to hold the past four commands
 command_log = []
