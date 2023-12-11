@@ -47,10 +47,10 @@ window.geometry('900x600')
 window.title('Python Client')
 window.resizable(False, False)
 
-# Create ttk.Separator for horizontal grid line
+# create ttk.Separator for horizontal grid line
 ttk.Separator(window, orient='horizontal').grid(row=8, column=0, columnspan=17, sticky='ew', pady=10)
 
-# Create ttk.Separator for vertical grid line
+#  ttk.Separator for vertical grid line
 ttk.Separator(window, orient='vertical').grid(row=0, column=2, rowspan=17, sticky='ns', padx=10)
 
 # create log label
@@ -89,8 +89,9 @@ def play_command():
 # create arrow buttons
 forward_button = tk.Button(window, text='\u2191', command=forward_command, width=5, height=2)
 backward_button = tk.Button(window, text='\u2193', command=backward_command, width=5, height=2)
-left_button = tk.Button(window, text='\u2190', command=left_command, width=5, height=2)
+left_button = tk.Button(window, text='\u2190', command=left_command, width=3, height=2)  # Adjusted width
 right_button = tk.Button(window, text='\u2192', command=right_command, width=5, height=2)
+
 
 # create stop button
 stop_button = tk.Button(window, text='\u26D4', command=stop_command, bg='red', fg='white', width=5, height=2)
@@ -99,12 +100,12 @@ stop_button = tk.Button(window, text='\u26D4', command=stop_command, bg='red', f
 start_button = tk.Button(window, text='\u25B6', command=play_command, bg='green', fg='white', width=5, height=2)
 
 # position the buttons in the window
-forward_button.grid(row=1, column=1, padx=10, pady=10, sticky='nsew')
-backward_button.grid(row=3, column=1, padx=10, pady=10, sticky='nsew')
-left_button.grid(row=2, column=0, padx=10, pady=10, sticky='nsew')
-right_button.grid(row=2, column=2, padx=10, pady=10, sticky='nsew')
-stop_button.grid(row=2, column=1, padx=10, pady=10, sticky='nsew')
-start_button.grid(row=4, column=1, padx=10, pady=10, sticky='nsew')
+forward_button.grid(row=0, column=4, padx=10, pady=10, sticky='nsew')
+stop_button.grid(row=1, column=4, padx=10, pady=10, sticky='nsew')
+left_button.grid(row=1, column=3, padx=10, pady=10, sticky='nsew')
+right_button.grid(row=1, column=5, padx=10, pady=10, sticky='nsew')
+backward_button.grid(row=2, column=4, padx=10, pady=10, sticky='nsew')
+start_button.grid(row=3, column=4, padx=10, pady=10, sticky='nsew')
 
 # configure row and column weights for resizing
 window.grid_rowconfigure(10, weight=1)
@@ -124,3 +125,4 @@ if len(sys.argv) > 1:
     receive_username(sys.argv[1])
 
 window.mainloop()
+   
