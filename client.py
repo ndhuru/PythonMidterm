@@ -1,151 +1,188 @@
-from flask import Flask, request, jsonify
-from adafruit_motorkit import MotorKit
-import time
-
-kit = MotorKit(0x40)
-# flask app
-app = Flask(__name__)
-
-
-# route for index
-@app.route('/')
-def index():
-    # html
-    return '''
-    <html>
-    <head>
-        <style>
-        .stop-button {
-            background-color: red;
-            color: white;
-            border: none;
-            padding: 10px 20px;
-            border-radius: 50%;
-            font-size: 20px;
-        }
-
-        .play-button {
-            background-color: green;
-            color: white;
-            border: none;
-            padding: 10px 20px;
-            border-radius: 50%;
-            font-size: 20px;
-        }
-        </style>
-    </head>
-    <body>
-        <h1>Robot Control</h1>
-        <div style="display: flex; justify-content: center;">
-            <button onclick="sendCommand('forward')" style="padding: 10px 20px;">&#8593;</button>
-        </div>
-        <div style="display: flex; justify-content: center;">
-            <button onclick="sendCommand('left')" style="padding: 10px 20px;">&#8592;</button>
-            <button onclick="sendCommand('stop')" class="stop-button">Stop</button>
-            <button onclick="sendCommand('play')" class="play-button">&#9654;</button>
-            <button onclick="sendCommand('right')" style="padding: 10px 20px;">&#8594;</button>
-        </div>
-        <div style="display: flex; justify-content: center;">
-            <button onclick="sendCommand('backward')" style="padding: 10px 20px;">&#8595;</button>
-        </div>
-        <script>
-        function sendCommand(command) {
-            fetch('/control', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({ 'command': command })
-            })
-            .then(response => response.json())
-            .then(data => console.log(data))
-            .catch(error => console.error('Error:', error));
-        }
-        </script>
-    </body>
-    </html>
-    '''
+import tkinter as tk
+from tkinter import ttk, messagebox
+import requests
+import sys
+import datetime
+from videostream import *
 
 
-# route for control functions
-@app.route('/control', methods=['POST'])
-def control():
-    # extract command from POST request
-    command = request.json['command']
-    # implement control logic based on received command
-    if command == 'forward':
-        forward()
-    # forward statement, i set it to 2.6 as an example
-    elif command == 'backward':
-        backward()
-    # backward statement, i set it to 2.6 as an example
-    elif command == 'left':
-        left()
-    # left statement, i set it to 2.6 as an example
-    elif command == 'right':
-        right()
-    # right statement, i set it to 2.6 as an example
-    elif command == 'stop':
-        stop()
-    # stop statement
-    elif command == 'play':
-        play()
-    # play statement, I just had it run something
+
+
+
+# api base url
+api_base_url = 'http://127.0.0.1:5000'
+
+# create a list to hold the past four commands
+command_log = []
+
+# variable to store the username of the logged-in user
+logged_in_user = ""
+
+
+# function to send control command to the api and update the command log
+def send_command(command):
+    endpoint = f'{api_base_url}/control'
+    payload = {'command': command}
+    response = requests.post(endpoint, json=payload)
+    if response.status_code == 200:
+        update_command_log(command)
     else:
-        return jsonify({'status': 'error', 'message': 'Invalid command'})
-    return jsonify({'status': 'success', 'message': 'Command executed'})
+        messagebox.showerror("Error", "Failed to execute command.")
 
 
-# define functions for movement commands
-def forward(amount_of_time_to_run):
-    # adjust motor throttle for forward movement
-    # notice how they amde the motors backwards
-    # -0.5 and 0.64 to move forward
-    kit.motor1.throttle = -0.5
-    kit.motor2.throttle = 0.64
+# function to update the command log
+def update_command_log(command):
+    global logged_in_user
+    if len(command_log) == 4:
+        command_log.pop(0)
+    log_entry = f"{logged_in_user}: {command} on {datetime.datetime.now()}"
+    command_log.append(log_entry)
+    log_text.set('\n'.join(command_log))
+    with open('cmdlog.txt', 'a') as file:
+        file.write(log_entry + '\n')
+
+
+# function to receive the logged-in username from main.py
+def receive_username(username):
+    global logged_in_user
+    logged_in_user = username
+
+
+# create the main window
+window = tk.Tk()
+window.configure(bg='#639c8f')
+window.geometry('900x600')
+window.title('Python Client')
+window.resizable(False, False)
+
+
+# create ttk.Separator for horizontal grid line
+ttk.Separator(window, orient='horizontal').grid(row=8, column=0, columnspan=17, sticky='ew', pady=10)
+
+# ttk.Separator for vertical grid line
+ttk.Separator(window, orient='vertical').grid(row=0, column=2, rowspan=17, sticky='ns', padx=10)
+
+
+# create log label
+log_label = tk.Label(window, text='Log History:', bg='#639c8f', fg='#e21d76', font='bold')
+log_label.grid(row=9, column=3, padx=10, pady=10, sticky='w')
+
+# create log text widget
+log_text = tk.StringVar()
+log_text_widget = tk.Label(window, textvariable=log_text, justify='left', anchor='w', relief='solid')
+log_text_widget.grid(row=10, column=3, padx=10, pady=10, rowspan=6, sticky='nsew')
+
+
+# function to send 'forward' command
+def forward_command():
+    send_command('forward')
+
+
+# function to send 'backward' command
+def backward_command():
+    send_command('backward')
+
+
+# function to send 'left' command
+def left_command():
+    send_command('left')
+
+
+# function to send 'right' command
+def right_command():
+    send_command('right')
+
+
+# function to send 'stop' command
+def stop_command():
+    send_command('stop')
+
+
+# function to send 'start' command
+def play_command():
+    send_command('play')
+
+
+# create arrow buttons
+forward_button = tk.Button(window, text='\u2191', command=forward_command, width=2, height=2)
+backward_button = tk.Button(window, text='\u2193', command=backward_command, width=2, height=2)
+left_button = tk.Button(window, text='\u2190', command=left_command, width=2, height=2)  # Modified width
+right_button = tk.Button(window, text='\u2192', command=right_command, width=3, height=2)
+
+# create stop button
+stop_button = tk.Button(window, text='\u26D4', command=stop_command, bg='red', fg='red', width=5, height=2)
+
+# create start button
+start_button = tk.Button(window, text='\u25B6', command=play_command, bg='green', fg='green', width=5, height=2)
+
+# position the buttons in the window
+forward_button.grid(row=0, column=4, padx=10, pady=10, sticky='nsew')
+stop_button.grid(row=1, column=4, padx=10, pady=10, sticky='nsew')
+left_button.grid(row=1, column=3, padx=10, pady=10, sticky='nsew')
+right_button.grid(row=1, column=5, padx=10, pady=10, sticky='nsew')
+backward_button.grid(row=2, column=4, padx=10, pady=10, sticky='nsew')
+start_button.grid(row=3, column=4, padx=10, pady=10, sticky='nsew')
+
+# configure row and column weights for resizing
+window.grid_rowconfigure(10, weight=1)
+window.grid_columnconfigure(2, weight=1)
+window.grid_columnconfigure(2, weight=1)
+window.grid_columnconfigure(2, weight=1)
+window.grid_columnconfigure(2, weight=1)
 
 
 
-def backward(amount_of_time_to_run):
-    # same confusion
-    kit.motor1.throttle = 0.7
-    kit.motor2.throttle = -0.7
+
+
+# function to handle the 'W' key press event
+def on_press_w(event):
+    forward_command()
+
+# function to handle the 'A' key press event
+def on_press_a(event):
+    left_command()
+
+# function to handle the 'S' key press event
+def on_press_s(event):
+    backward_command()
+
+# function to handle the 'D' key press event
+def on_press_d(event):
+    right_command()
+
+# function to handle the 'Q' key press event
+def on_press_q(event):
+    stop_command()
+
+# bind the 'W' key press event
+window.bind("<KeyPress-w>", on_press_w)
+
+# bind the 'A' key press event
+window.bind("<KeyPress-a>", on_press_a)
+
+# bind the 'S' key press event
+window.bind("<KeyPress-s>", on_press_s)
+
+# bind the 'D' key press event
+window.bind("<KeyPress-d>", on_press_d)
+
+# bind the 'Q' key press event
+window.bind("<KeyPress-q>", on_press_q)
 
 
 
-def left(amount_of_time_to_run):
-    # left,
-    # now need to negate both motor throttles for some reason instead of negating just one...
-    kit.motor1.throttle = -0.64
-    kit.motor2.throttle = -0.64
+# function to handle window close event
+def on_closing():
+    if messagebox.askokcancel("Quit", "Do you want to quit?"):
+        window.destroy()
 
 
-
-def right(amount_of_time_to_run):
-    # right, now they're both positive?
-    kit.motor1.throttle = 0.64
-    kit.motor2.throttle = 0.64
+# set the closing event handler
+window.protocol("WM_DELETE_WINDOW", on_closing)
 
 
+# call the receive_username function with the username passed as an argument
+if len(sys.argv) > 1:
+    receive_username(sys.argv[1])
 
-def stop():
-    # straightforward stop function
-    kit.motor1.throttle = 0.0
-    kit.motor2.throttle = 0.0
-
-
-def play():
-    # set play to move
-    kit.motor1.throttle = 0.5
-    kit.motor2.throttle = 0.5
-
-
-# define similar functions for backward, left, right, stop, and play commands
-# (backward, left, right, stop, play functions follow a similar structure)
-
-# run the Flask app
-if __name__ == '__main__':
-    # start the app on a specific host and port, I don't know how the port part works though
-    # will research ports more
-    app.run(host='0.0.0.0', port=4444)
-
+window.mainloop()
